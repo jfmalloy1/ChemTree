@@ -1,6 +1,7 @@
 import assemblycalculator as ac  #imported on Cradle
 import json
 import pandas as pd
+from tqdm import tqdm
 
 
 def link_smiles(labels):
@@ -14,7 +15,7 @@ def link_smiles(labels):
         list: all smiles strings associated with a list of KEGG IDs
     """
     #Open compound label file as a pandas dataframe
-    kegg_df = pd.read_csv("KeggData\\KEGG_chiral_molweight_formula_labels.csv")
+    kegg_df = pd.read_csv("KeggData/KEGG_chiral_molweight_formula_labels.csv")
 
     smiles = []
     for l in labels:
@@ -29,13 +30,13 @@ def find_KEGG_smiles(classes):
     Assumes a brite.json file in KeggData directory.
 
     Args:
-        classes (list): List of KEGG BRITE classes (e.g., "organic acids" or "lipids")
+        classes (list): List of KEGG BRITE classes (e.g., "Organic acids" or "Lipids")
 
     Returns:
         list: list of all smiles strings found in KEGG associated with a
         given class
     """
-    with open("KeggData\\brite.json") as json_file:
+    with open("KeggData/brite.json") as json_file:
         data = json.load(json_file)
 
     cpd_smiles = []
@@ -56,13 +57,60 @@ def find_KEGG_smiles(classes):
     return cpd_smiles
 
 
+def find_min_pathway_frags(cpd):
+    """Generates all fragments from the minimal assembly theory pathway
+
+    Args:
+        cpd (string): smiles description of a chemical compound
+
+    Returns:
+        None (so far)
+    """
+    calc = ac.MACalculation(cpd, 30, "exact")
+
+    calc.execute()
+
+    print("Compound:", calc.compound)
+    print("Valid mol:", calc.valid_mol)
+    print("Original Compound:", calc.original_compound)
+    print("Timeout:", calc.timeout)
+    print("Method:", calc.method)
+    #print("ncpus:", calc.ncpus)
+    print("MA value from Calculation: ", calc.result)
+    print("Number of minimal Pathways: ", len(calc.pathway))
+    print("Full pathways:", calc.pathway)
+    print("Time used:", calc.time_used)
+    print("Calculation completed: ", calc.completed)
+    print("Failed:", calc.failed)
+    print("Modified:", calc.modified)
+    # print("Fragments:", calc.fragments)
+    # print("Histogram:", calc.num_frags_hist)
+    # print("Path samples:", calc.path_samples)
+    # print("Max atoms:", calc.max_atoms)
+    print("Error message:", calc.error_message)
+    #print("Full output:", calc.full_output)
+
+    # for min_path in calc.pathway:
+    #     print("Possible Pathway: ")
+    #     for (frag, count) in min_path:
+    #         print("Fragment ", frag, " used ", count, " times")
+
+
 def main():
     #Reads in opioid data
-    df = pd.read_csv("DrugData\opioid_structures.csv")
-    print("Size of opioids =", len(df))
+    df = pd.read_csv("DrugData/opioid_structures.csv")
     opioid_smiles = df["Smiles"].tolist()
+    # find_min_pathway_frags(opioid_smiles[0])
 
-    print(opioid_smiles)
+    #Find organic acid compounds
+    kegg_smiles = find_KEGG_smiles(["Organic acids"])
+    print(kegg_smiles)
+    find_min_pathway_frags("CC(=O)OC1=CC=CC=C1C(=O)O")
+
+    # for kegg_cpd in kegg_smiles:
+    #     find_min_pathway_frags(kegg_cpd)
+
+    #     print()
 
 
 if __name__ == "__main__":
